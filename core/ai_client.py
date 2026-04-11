@@ -98,7 +98,7 @@ class AIClient(QObject):
             response = self.client.chat.completions.create(
                 model=self.config.get("ai", "model", default="deepseek-chat"),
                 messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=10
+                max_tokens=64
             )
             return True, f"连接成功 - 模型: {response.model}"
         except Exception as e:

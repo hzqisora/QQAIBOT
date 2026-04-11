@@ -2,7 +2,7 @@ import threading
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QLineEdit, QFrame, QDoubleSpinBox,
                              QSpinBox, QComboBox, QMessageBox)
-from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtCore import pyqtSignal, QObject, QMetaObject, Qt
 
 
 class _TestWorker(QObject):
@@ -47,6 +47,9 @@ class AIConfigPage(QWidget):
             "DeepSeek (推荐)",
             "通义千问 Qwen",
             "智谱 GLM",
+            "LongCat Flash Chat",
+            "LongCat Flash Thinking",
+            "LongCat Flash Lite",
             "自定义"
         ])
         self.preset_combo.currentIndexChanged.connect(self._on_preset_changed)
@@ -138,6 +141,9 @@ class AIConfigPage(QWidget):
             0: ("https://api.deepseek.com/v1", "deepseek-chat"),
             1: ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-turbo"),
             2: ("https://open.bigmodel.cn/api/paas/v4", "glm-4-flash"),
+            3: ("https://api.longcat.chat/openai", "LongCat-Flash-Chat"),
+            4: ("https://api.longcat.chat/openai", "LongCat-Flash-Thinking-2601"),
+            5: ("https://api.longcat.chat/openai", "LongCat-Flash-Lite"),
         }
         if index in presets:
             url, model = presets[index]
@@ -174,13 +180,14 @@ class AIConfigPage(QWidget):
 
     def _test_connection(self):
         self._save_config()
+        self._worker = _TestWorker(self.bot.ai)
+        self._worker.finished.connect(self._on_test_finished)
 
-        def _run():
-            ok, msg = self.bot.ai.test_connection()
-            if ok:
-                QMessageBox.information(self, "测试成功", msg)
-            else:
-                QMessageBox.warning(self, "测试失败", msg)
-
-        t = threading.Thread(target=_run, daemon=True)
+        t = threading.Thread(target=self._worker.run, daemon=True)
         t.start()
+
+    def _on_test_finished(self, ok, msg):
+        if ok:
+            QMessageBox.information(self, "测试成功", msg)
+        else:
+            QMessageBox.warning(self, "测试失败", msg)
